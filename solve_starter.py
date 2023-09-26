@@ -35,7 +35,7 @@ def is_goal(state):
                 available_spots.remove(spot)
                 break
 
-    if len(available_spots) is not 0:
+    if len(available_spots) != 0:
         return False
     else:
         return True
@@ -59,16 +59,23 @@ def get_path(state):
 def is_obstacle(location, state):
     for obstacle in state.board.obstacles:
         if obstacle[0] == location[0] and obstacle[1] == location[1]:
-            return False
+            return True
     
-    return True
+    return False
 
 def is_box(location, state):
-    for box in state.board.boxeses:
+    for box in state.board.boxes:
         if box[0] == location[0] and box[1] == location[1]:
-            return False
+            return True
     
-    return True
+    return False
+
+def is_robot(location, state):
+    for robot in state.board.robots:
+        if robot[0] == location[0] and robot[1] == location[1]:
+            return True
+
+    return False
 
 def get_successors(state):
     """
@@ -82,17 +89,151 @@ def get_successors(state):
     """
     temp_state = copy.deepcopy(state)
     state_list = []
-    for robot in temp_state.board.robots:
+    new_state = copy.deepcopy(temp_state)
+    for robIndex in range(len(temp_state.board.robots)):
         #see if robot can move up:
-        if is_obstacle((robot[0], robot[1]+1), temp_state) == False:
+        robot = temp_state.board.robots[robIndex]
+        if is_obstacle((robot[0], robot[1]+1), temp_state) == False and is_robot((robot[0], robot[1]+1), temp_state) == False:
             if is_box((robot[0], robot[1]+1), temp_state) == True:
                 #The case where there is a box in the robots path but no obstacle preventing them from pushing it
-                if is_obstacle((robot[0], robot[1]+2), temp_state) == False and is_box((robot[0], robot[1]+2), temp_state):
-                    for box in temp_state
+                if(is_obstacle((robot[0], robot[1]+2), temp_state) == False and 
+                is_box((robot[0], robot[1]+2), temp_state) == False and
+                is_robot((robot[0], robot[1]+2), temp_state) == False):
+                    for boxIndex in range(len(temp_state.board.boxes)):
+                        if(temp_state.board.boxes[boxIndex][0] == robot[0] and 
+                        temp_state.board.boxes[boxIndex][1] == robot[1]+1):
+                            listBox = list(temp_state.board.boxes[boxIndex])
+                            listBox[1] += 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            listRobot = list(temp_state.board.robots[robIndex])
+                            listRobot[1] += 1
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                            state_list.append(copy.deepcopy(temp_state))
 
-                    
-            
+                            #Reset temp state
+                            listRobot[1] -= 1
+                            listBox[1] -= 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                        break
+            #The case where there is no box or obstacle obstructing the robots path            
+            else:
+                listRobot = list(temp_state.board.robots[robIndex])
+                listRobot[1] += 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+                state_list.append(copy.deepcopy(temp_state))
 
+                #Reset temp state
+                listRobot[1] -= 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+    
+        #see if robot can move down:
+        if is_obstacle((robot[0], robot[1]-1), temp_state) == False and is_robot((robot[0], robot[1]-1), temp_state) == False:
+            if is_box((robot[0], robot[1]-1), temp_state) == True:
+                #The case where there is a box in the robots path but no obstacle preventing them from pushing it
+                if(is_obstacle((robot[0], robot[1]-2), temp_state) == False and 
+                is_box((robot[0], robot[1]-2), temp_state) == False and
+                is_robot((robot[0], robot[1]-2), temp_state) == False):
+                    for boxIndex in range(len(temp_state.board.boxes)):
+                        if(temp_state.board.boxes[boxIndex][0] == robot[0] and 
+                        temp_state.board.boxes[boxIndex][1] == robot[1]-1):
+                            listBox = list(temp_state.board.boxes[boxIndex])
+                            listBox[1] -= 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            listRobot = list(temp_state.board.robots[robIndex])
+                            listRobot[1] -= 1
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                            state_list.append(copy.deepcopy(temp_state))
+
+                            #Reset temp state
+                            listRobot[1] += 1
+                            listBox[1] += 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                        break
+            #The case where there is no box or obstacle obstructing the robots path            
+            else:
+                listRobot = list(temp_state.board.robots[robIndex])
+                listRobot[1] -= 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+                state_list.append(copy.deepcopy(temp_state))
+
+                #Reset temp state
+                listRobot[1] += 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+
+        #see if robot can move left:
+        if is_obstacle((robot[0]-1, robot[1]), temp_state) == False and is_robot((robot[0]-1, robot[1]), temp_state) == False:
+            if is_box((robot[0]-1, robot[1]), temp_state) == True:
+                #The case where there is a box in the robots path but no obstacle preventing them from pushing it
+                if(is_obstacle((robot[0]-2, robot[1]), temp_state) == False and 
+                is_box((robot[0]-2, robot[1]), temp_state) == False and
+                is_robot((robot[0]-2, robot[1]), temp_state) == False):
+                    for boxIndex in range(len(temp_state.board.boxes)):
+                        if (temp_state.board.boxes[boxIndex][0] == robot[0]-1 and 
+                        temp_state.board.boxes[boxIndex][1] == robot[1]):
+                            listBox = list(temp_state.board.boxes[boxIndex])
+                            listBox[0] -= 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            listRobot = list(temp_state.board.robots[robIndex])
+                            listRobot[0] -= 1
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                            state_list.append(copy.deepcopy(temp_state))
+
+                            #Reset temp state
+                            listRobot[0] += 1
+                            listBox[0] += 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                        break
+            #The case where there is no box or obstacle obstructing the robots path            
+            else:
+                listRobot = list(temp_state.board.robots[robIndex])
+                listRobot[0] -= 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+                state_list.append(copy.deepcopy(temp_state))
+
+                #Reset temp state
+                listRobot[0] += 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+
+        #see if robot can move right:
+        if is_obstacle((robot[0]+1, robot[1]), temp_state) == False and is_robot((robot[0]+1, robot[1]), temp_state) == False:
+            if is_box((robot[0]+1, robot[1]), temp_state) == True:
+                #The case where there is a box in the robots path but no obstacle preventing them from pushing it
+                if(is_obstacle((robot[0]+2, robot[1]), temp_state) == False and 
+                is_box((robot[0]+2, robot[1]), temp_state) == False and
+                is_robot((robot[0]+2, robot[1]), temp_state) == False):
+                    for box in temp_state.board.boxes:
+                        if (temp_state.board.boxes[boxIndex][0] == robot[0]+1 and 
+                        temp_state.board.boxes[boxIndex][1] == robot[1]):
+                            listBox = list(temp_state.board.boxes[boxIndex])
+                            listBox[0] += 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            listRobot = list(temp_state.board.robots[robIndex])
+                            listRobot[0] += 1
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                            state_list.append(copy.deepcopy(temp_state))
+
+                            #Reset temp state
+                            listRobot[0] -= 1
+                            listBox[0] -= 1
+                            temp_state.board.boxes[boxIndex] = tuple(listBox)
+                            temp_state.board.robots[robIndex] = tuple(listRobot)
+                        break
+            #The case where there is no box or obstacle obstructing the robots path            
+            else:
+                listRobot = list(temp_state.board.robots[robIndex])
+                listRobot[0] += 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+                state_list.append(copy.deepcopy(temp_state))
+
+                #Reset temp state
+                listRobot[0] -= 1
+                temp_state.board.robots[robIndex] = tuple(listRobot)
+    
+
+    return state_list
     raise NotImplementedError
 
 def dfs(init_board):
