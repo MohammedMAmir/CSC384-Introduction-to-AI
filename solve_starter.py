@@ -89,7 +89,8 @@ def get_successors(state):
     """
     temp_state = copy.deepcopy(state)
     state_list = []
-    new_state = copy.deepcopy(temp_state)
+    temp_state.depth = state.depth + 1
+    temp_state.parent = state
     for robIndex in range(len(temp_state.board.robots)):
         #see if robot can move up:
         robot = temp_state.board.robots[robIndex]
