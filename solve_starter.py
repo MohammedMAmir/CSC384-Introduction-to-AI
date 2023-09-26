@@ -13,6 +13,7 @@ from heapq import heappush, heappop
 import time
 import argparse
 import math # for infinity
+import copy
 
 from board import *
 
@@ -39,7 +40,7 @@ def is_goal(state):
     else:
         return True
     
-    raise NotImplementedError
+    #raise NotImplementedError
 
 
 def get_path(state):
@@ -55,6 +56,19 @@ def get_path(state):
 
     raise NotImplementedError
 
+def is_obstacle(location, state):
+    for obstacle in state.board.obstacles:
+        if obstacle[0] == location[0] and obstacle[1] == location[1]:
+            return False
+    
+    return True
+
+def is_box(location, state):
+    for box in state.board.boxeses:
+        if box[0] == location[0] and box[1] == location[1]:
+            return False
+    
+    return True
 
 def get_successors(state):
     """
@@ -66,9 +80,20 @@ def get_successors(state):
     :return: The list of successor states.
     :rtype: List[State]
     """
+    temp_state = copy.deepcopy(state)
+    state_list = []
+    for robot in temp_state.board.robots:
+        #see if robot can move up:
+        if is_obstacle((robot[0], robot[1]+1), temp_state) == False:
+            if is_box((robot[0], robot[1]+1), temp_state) == True:
+                #The case where there is a box in the robots path but no obstacle preventing them from pushing it
+                if is_obstacle((robot[0], robot[1]+2), temp_state) == False and is_box((robot[0], robot[1]+2), temp_state):
+                    for box in temp_state
+
+                    
+            
 
     raise NotImplementedError
-
 
 def dfs(init_board):
     """
