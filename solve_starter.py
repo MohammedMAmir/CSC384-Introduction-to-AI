@@ -59,6 +59,7 @@ def get_path(state):
     while(currState.depth > 0):
         currState = currState.parent
         path.insert(0,currState)
+
     return path
 
 def is_obstacle(location, state):
@@ -84,11 +85,11 @@ def is_robot(location, state):
 
 def copy_board(board: Board):
     new_board = Board(board.name, board.width, board.height, copy.deepcopy(board.robots), 
-                      copy.deepcopy(board.boxes), copy.deepcopy(board.storage), copy.deepcopy(board.obstacles))
+                      copy.deepcopy(board.boxes), board.storage, board.obstacles)
     return new_board
 
 def copy_state(state: State):
-    new_state = State(copy_board(state.board), state.hfn, state.f, state.depth, parent=None)
+    new_state = State(copy_board(state.board), state.hfn, state.f, state.depth, state.parent)
     return new_state
 
 def get_successors(state):
@@ -253,10 +254,8 @@ def get_successors(state):
     raise NotImplementedError
 
 def multi_prune(state, visited):
-    for i in visited:
-        if i == state.id:
-            return True
-
+    if str(state.board) in visited:
+        return True
     return False
 
 def moveState(direction, pos_Neg, temp_State, robIndex):
@@ -277,26 +276,25 @@ def dfs(init_board):
     :rtype: List[State], int
     """
 
-    intialState = State(init_board, 0, 0, 0, None)
+    initialState = State(init_board, heuristic_zero ,0, 0)
     frontier = []
     visited = []
-    visited.append(intialState.id)
-    frontier.append(intialState)
+    visited = {str(initialState.board)}
+    heapq.heappush(frontier,(0, initialState))
     count = 0
-    while len(frontier) > 0 and count < 100000:
-        currState = frontier.pop()
+    key = -1
+    while len(frontier) > 0:
+        currState = heappop(frontier)[1]
         ##currState.board.display()
         if is_goal(currState):
-            return get_path(currState), len(get_path(currState))
+            return get_path(currState), len(get_path(currState))-1
         else:
             successors_temp = get_successors(currState)
-            successors_prune = []
             for succ_index in range(len(successors_temp)):
                 if multi_prune(successors_temp[succ_index], visited) == False:
-                    successors_prune.append(successors_temp[succ_index])
-                    visited.append(successors_temp[succ_index].id)
-            if len(successors_prune) != 0:
-                frontier.extend(successors_prune)
+                    heapq.heappush(frontier, (key, successors_temp[succ_index]))
+                    key -= key
+                    visited.add(str(successors_temp[succ_index].board))
         count+=1
         if count == 9999:
             currState.board.display()
@@ -321,7 +319,27 @@ def a_star(init_board, hfn):
     :return: (the path to goal state, solution cost)
     :rtype: List[State], int
     """
-
+    initialState = State(init_board, hfn, hfn(init_board), 0)
+    frontier = []
+    visited= {str(initialState.board)}
+    heapq.heappush(frontier,(initialState.f, initialState))
+    count = 0
+    while(len(frontier) > 0):
+        currState = heappop(frontier)[1]
+        if is_goal(currState):
+            path = get_path(currState)
+            return path, len(path)-1
+        else:
+            successors_temp = get_successors(currState)
+            for succ_index in range(len(successors_temp)):
+                if(multi_prune(successors_temp[succ_index], visited) == False):
+                    heapq.heappush(frontier, ((hfn(successors_temp[succ_index].board) + successors_temp[succ_index].depth),successors_temp[succ_index]))                             
+                    visited.add(str(successors_temp[succ_index].board))
+            
+        count+=1
+        if count == 9999:
+                currState.board.display()
+    return [], -1
     raise NotImplementedError
 
 
@@ -338,7 +356,18 @@ def heuristic_basic(board):
     :return: The heuristic value.
     :rtype: int
     """
+    manhattan_sum = 0
+    for box in board.boxes:
+        box_x_y = list(box)
+        closest_goal_distance = float('inf')
+        for goal in board.storage:
+            goal_x_y = list(goal)
+            manhattan = abs(goal_x_y[0] - box_x_y[0]) + abs(goal_x_y[1] - box_x_y[1])
+            if(manhattan < closest_goal_distance):
+                closest_goal_distance = manhattan
+        manhattan_sum += closest_goal_distance
 
+    return manhattan_sum
     raise NotImplementedError
 
 
@@ -352,6 +381,26 @@ def heuristic_advanced(board):
     :rtype: int
     """
 
+    #Assign each storage to the closest box and then remove it from the available boxes
+    cooler_manhattan_sum = 0
+    available_goals = []
+    available_box = []
+    for box in board.boxes:
+        available_box.append(box)
+
+    for goal in board.storage:
+        available_goals.append(goal)
+
+    for goal in available_goals:
+        closest_box = available_box[0]
+        closest_distance = abs(list(closest_box)[0] - list(goal)[0]) + abs(list(closest_box)[1] - list(goal)[1])
+        for box in available_box:
+            if(abs(list(box)[0] - list(goal)[0]) + abs(list(box)[1] - list(goal)[1]) < closest_distance):
+                closest_distance = abs(list(box)[0] - list(goal)[0]) + abs(list(box)[1] - list(goal)[1])
+                closest_box = box
+        cooler_manhattan_sum += closest_distance       
+        available_box.remove(closest_box)
+    return cooler_manhattan_sum
     raise NotImplementedError
 
 
